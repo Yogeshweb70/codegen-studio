@@ -7,8 +7,6 @@ import { EmailTemplateModel } from './types';
 function App() {
   const [model, setModel] = useState<EmailTemplateModel>(defaultTemplate());
   const [figmaLink, setFigmaLink] = useState('');
-  const [figmaToken, setFigmaToken] = useState(() => localStorage.getItem('figmaAccessToken') ?? '');
-  const [showFigmaToken, setShowFigmaToken] = useState(false);
   const [activePreview, setActivePreview] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [generatedHtml, setGeneratedHtml] = useState<string>(generateEmailHtml(defaultTemplate()));
   const [generationMessage, setGenerationMessage] = useState('');
@@ -33,12 +31,8 @@ function App() {
     setGenerationMessage(figmaLink.trim() ? 'Reading the Figma design and generating responsive email HTML...' : 'Generating HTML from your reference...');
 
     try {
-      if (figmaToken.trim()) {
-        localStorage.setItem('figmaAccessToken', figmaToken.trim());
-      }
-
       if (figmaLink.trim()) {
-        const result = await generateEmailHtmlFromFigmaLink(model, figmaLink, figmaToken);
+        const result = await generateEmailHtmlFromFigmaLink(model, figmaLink);
         setGeneratedHtml(result.html);
         setGenerationMessage(result.message);
         return;
@@ -74,31 +68,6 @@ function App() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <div className="sidebar-card figma-card">
-          <h2>Figma Integration</h2>
-          <label>
-            Figma Template Link
-            <input value={figmaLink} onChange={(e) => setFigmaLink(e.target.value)} placeholder="Paste Figma link here" />
-          </label>
-          <label>
-            Figma Access Token
-            <div className="token-input-row">
-              <input
-                value={figmaToken}
-                onChange={(e) => setFigmaToken(e.target.value)}
-                placeholder="Paste your Figma token"
-                type={showFigmaToken ? 'text' : 'password'}
-                autoComplete="off"
-                spellCheck={false}
-              />
-              <button type="button" className="inline-button" onClick={() => setShowFigmaToken((visible) => !visible)}>
-                {showFigmaToken ? 'Hide' : 'Show'}
-              </button>
-            </div>
-          </label>
-          <p className="field-help">The token is saved only in this browser and is required to read the linked Figma file.</p>
-        </div>
-
         <div className="sidebar-card">
           <h2>Campaign Content</h2>
           <label>
@@ -150,6 +119,10 @@ function App() {
 
         <div className="sidebar-card">
           <h2>Generate Email</h2>
+          <label>
+            Figma Template Link
+            <input value={figmaLink} onChange={(e) => setFigmaLink(e.target.value)} placeholder="Paste Figma link here" />
+          </label>
           <button type="button" className="primary" onClick={generateTemplate} disabled={isGenerating}>
             {isGenerating ? 'Generating...' : 'Generate from reference'}
           </button>

@@ -473,20 +473,25 @@ function generateFigmaResponsiveEmailHtml(model: EmailTemplateModel, analysis: F
 </html>`;
 }
 
-export async function generateEmailHtmlFromFigmaLink(model: EmailTemplateModel, figmaLink: string, accessToken: string): Promise<FigmaGenerationResult> {
+function getFigmaAccessToken(): string {
+  return import.meta.env.VITE_FIGMA_ACCESS_TOKEN?.trim() ?? '';
+}
+
+export async function generateEmailHtmlFromFigmaLink(model: EmailTemplateModel, figmaLink: string): Promise<FigmaGenerationResult> {
   const parsedLink = parseFigmaTemplateLink(figmaLink);
+  const accessToken = getFigmaAccessToken();
 
   if (!parsedLink) {
     throw new Error('Paste a valid Figma design, file, or prototype link before generating.');
   }
 
-  if (!accessToken.trim()) {
-    throw new Error('Add a Figma personal access token so the app can read the design file.');
+  if (!accessToken) {
+    throw new Error('Figma access token is not configured. Set VITE_FIGMA_ACCESS_TOKEN in your .env file.');
   }
 
   const response = await fetch(`/figma-api/v1/files/${parsedLink.fileKey}`, {
     headers: {
-      'X-Figma-Token': accessToken.trim(),
+      'X-Figma-Token': accessToken,
     },
   });
 
@@ -497,7 +502,7 @@ export async function generateEmailHtmlFromFigmaLink(model: EmailTemplateModel, 
   const file = (await response.json()) as FigmaFileResponse;
   const linkedNode = parsedLink.nodeId ? findFigmaNode(file.document, parsedLink.nodeId) : undefined;
   const designRoot = linkedNode ?? findFirstFrame(file.document);
-  const previewImageUrl = designRoot.id ? await fetchFigmaPreviewImage(parsedLink.fileKey, designRoot.id, accessToken.trim()) : undefined;
+  const previewImageUrl = designRoot.id ? await fetchFigmaPreviewImage(parsedLink.fileKey, designRoot.id, accessToken) : undefined;
   const analysis = analyzeFigmaTemplate(designRoot, file.name, previewImageUrl);
 
   return {
